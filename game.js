@@ -29,10 +29,25 @@ return `<svg viewBox="0 0 100 120"><ellipse cx="50" cy="112" rx="26" ry="6" fill
 /* Musiques : thème principal MP3 (#menu-bgm) pour le menu + musiques générées pour combat, victoire, défaite */
 let AC,MG,vol=typeof SV.vol=='number'?SV.vol:.4,muted=!!SV.muted,prevVol=vol>.05?vol:.4,MB,cur='',TM,want='',NZ;
 const menuTrack=$('menu-bgm');
+const defeatTrack=$('defeat-bgm');
+const victoryTrack=$('victory-bgm');
+let defeatTrackFailed=false,victoryTrackFailed=false;
 if(menuTrack){
 menuTrack.addEventListener('error',()=>{
 if(!menuTrack.dataset.fallback){menuTrack.dataset.fallback='1';menuTrack.src='Where_the_Mountains_Sleep.mp3';menuTrack.load();if(want=='menu')syncMenuTrack()}});
 menuTrack.addEventListener('canplay',()=>{if(want=='menu')syncMenuTrack()});
+}
+if(defeatTrack){
+defeatTrack.addEventListener('error',()=>{
+if(!defeatTrack.dataset.fallback){defeatTrack.dataset.fallback='1';defeatTrack.src='defeat-beneath-25s-to-45s.mp3';defeatTrack.load();if(want=='lose')syncDefeatTrack()}
+else{defeatTrackFailed=true;if(want=='lose'){cur='';play('lose')}}});
+defeatTrack.addEventListener('canplay',()=>{if(want=='lose')syncDefeatTrack()});
+}
+if(victoryTrack){
+victoryTrack.addEventListener('error',()=>{
+if(!victoryTrack.dataset.fallback){victoryTrack.dataset.fallback='1';victoryTrack.src='victory-banners-20s.mp3';victoryTrack.load();if(want=='win')syncVictoryTrack()}
+else{victoryTrackFailed=true;if(want=='win'){cur='';play('win')}}});
+victoryTrack.addEventListener('canplay',()=>{if(want=='win')syncVictoryTrack()});
 }
 const effVol=()=>muted?0:vol;
 function syncMenuTrack(){
@@ -43,6 +58,22 @@ if(want=='menu'){
 if(!menuTrack.muted&&menuTrack.paused)menuTrack.play().catch(()=>{});
 else if(menuTrack.muted&&!menuTrack.paused)menuTrack.pause()}
 else if(!menuTrack.paused){menuTrack.pause()}}
+function syncDefeatTrack(){
+if(!defeatTrack||defeatTrackFailed)return;
+defeatTrack.volume=Math.max(0,Math.min(1,effVol()*.9));
+defeatTrack.muted=muted||vol<=0;
+if(want=='lose'){
+if(!defeatTrack.muted&&defeatTrack.paused){defeatTrack.currentTime=0;defeatTrack.play().catch(()=>{})}
+else if(defeatTrack.muted&&!defeatTrack.paused)defeatTrack.pause()}
+else if(!defeatTrack.paused){defeatTrack.pause();defeatTrack.currentTime=0}}
+function syncVictoryTrack(){
+if(!victoryTrack||victoryTrackFailed)return;
+victoryTrack.volume=Math.max(0,Math.min(1,effVol()*.9));
+victoryTrack.muted=muted||vol<=0;
+if(want=='win'){
+if(!victoryTrack.muted&&victoryTrack.paused){victoryTrack.currentTime=0;victoryTrack.play().catch(()=>{})}
+else if(victoryTrack.muted&&!victoryTrack.paused)victoryTrack.pause()}
+else if(!victoryTrack.paused){victoryTrack.pause();victoryTrack.currentTime=0}}
 const SC=[146.83,164.81,174.61,196,220,246.94,261.63,293.66,329.63,349.23,392,440];
 const nt=(f,t,d,ty,v)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v||.4,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(MB);o.start(t);o.stop(t+d+.05)};
 const drum=(t,k)=>{const g=AC.createGain();g.connect(MB);if(k){const o=AC.createOscillator();o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(40,t+.15);g.gain.setValueAtTime(.9,t);g.gain.exponentialRampToValueAtTime(.001,t+.2);o.connect(g);o.start(t);o.stop(t+.25)}else{const x=AC.createBufferSource();x.buffer=NZ;g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);x.connect(g);x.start(t)}};
@@ -54,13 +85,19 @@ lose:t=>{[[440,0],[392,.8],[349.23,1.6],[293.66,2.4]].forEach(a=>nt(a[0],t+a[1],
 function play(n){want=n;
 if(n=='menu'){
 cur='menu';clearTimeout(TM);if(MB&&AC)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
-syncMenuTrack();return}
-syncMenuTrack();
+syncDefeatTrack();syncVictoryTrack();syncMenuTrack();return}
+if(n=='lose'&&defeatTrack&&!defeatTrackFailed){
+cur='lose';clearTimeout(TM);if(MB&&AC)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
+syncMenuTrack();syncVictoryTrack();syncDefeatTrack();return}
+if(n=='win'&&victoryTrack&&!victoryTrackFailed){
+cur='win';clearTimeout(TM);if(MB&&AC)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
+syncMenuTrack();syncDefeatTrack();syncVictoryTrack();return}
+syncMenuTrack();syncDefeatTrack();syncVictoryTrack();
 if(!AC||cur==n||!TR[n])return;cur=n;clearTimeout(TM);if(MB)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
 MB=AC.createGain();MB.connect(MG);const my=MB;let t=AC.currentTime+.15,k=0;
 const run=()=>{if(MB!==my)return;t+=TR[n](t,k++);if(n=='combat')TM=setTimeout(run,Math.max(100,(t-AC.currentTime-1.5)*1000))};run()}
 function music(){
-syncMenuTrack();
+syncMenuTrack();syncDefeatTrack();syncVictoryTrack();
 if(AC){if(AC.state=='suspended')AC.resume();return}
 try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return}
 MG=AC.createGain();MG.gain.value=effVol()*.5;MG.connect(AC.destination);
@@ -74,7 +111,7 @@ if(!keepMute)muted=vol===0;
 if(vol>0)prevVol=vol;
 const ev=effVol();
 if(MG)MG.gain.value=ev*.5;
-syncMenuTrack();
+syncMenuTrack();syncDefeatTrack();syncVictoryTrack();
 const pct=Math.round(ev*100);
 if(vSld)vSld.value=pct;
 if(vPct)vPct.textContent=pct+'%';
