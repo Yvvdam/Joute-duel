@@ -26,46 +26,43 @@ let SV={};try{SV=JSON.parse(localStorage.getItem('joute')||'{}')}catch(e){}
 const sv=()=>{try{localStorage.setItem('joute',JSON.stringify(SV))}catch(e){}};
 function art(d){if(d.img)return `<img src="${d.img}" alt="${d.r}">`;
 return `<svg viewBox="0 0 100 120"><ellipse cx="50" cy="112" rx="26" ry="6" fill="#0005"/><rect x="30" y="52" width="40" height="52" rx="14" fill="${d.c}" stroke="#2b1d10" stroke-width="3"/><circle cx="50" cy="34" r="20" fill="#f1d3a8" stroke="#2b1d10" stroke-width="3"/><circle cx="55" cy="33" r="3" fill="#2b1d10"/><circle cx="64" cy="33" r="3" fill="#2b1d10"/><text x="70" y="90" font-size="30">${d.e}</text></svg>`}
-/* Musiques : thème principal MP3 pour le menu + musiques générées pour combat, victoire, défaite */
+/* Musiques : thème principal MP3 (#menu-bgm) pour le menu + musiques générées pour combat, victoire, défaite */
 let AC,MG,vol=typeof SV.vol=='number'?SV.vol:.4,muted=!!SV.muted,prevVol=vol>.05?vol:.4,MB,cur='',TM,want='',NZ;
-const MENU_MP3='assets/Where_the_Mountains_Sleep.mp3';
-let menuTrack=null,menuTrackReady=false,menuTrackFailed=false;
-try{
-menuTrack=new Audio(MENU_MP3);
-menuTrack.loop=true;
-menuTrack.preload='auto';
-menuTrack.addEventListener('canplay',()=>{menuTrackReady=true;if(want=='menu')syncMenuTrack()});
-menuTrack.addEventListener('error',()=>{menuTrackFailed=true;if(want=='menu'){cur='';play('menu')}})
-}catch(e){menuTrackFailed=true}
+const menuTrack=$('menu-bgm');
+if(menuTrack){
+menuTrack.addEventListener('error',()=>{
+if(!menuTrack.dataset.fallback){menuTrack.dataset.fallback='1';menuTrack.src='Where_the_Mountains_Sleep.mp3';menuTrack.load();if(want=='menu')syncMenuTrack()}});
+menuTrack.addEventListener('canplay',()=>{if(want=='menu')syncMenuTrack()});
+}
 const effVol=()=>muted?0:vol;
 function syncMenuTrack(){
-if(!menuTrack||menuTrackFailed)return;
-menuTrack.volume=Math.max(0,Math.min(1,effVol()*.85));
+if(!menuTrack)return;
+menuTrack.volume=Math.max(0,Math.min(1,effVol()*.9));
 menuTrack.muted=muted||vol<=0;
 if(want=='menu'){
 if(!menuTrack.muted&&menuTrack.paused)menuTrack.play().catch(()=>{});
 else if(menuTrack.muted&&!menuTrack.paused)menuTrack.pause()}
 else if(!menuTrack.paused){menuTrack.pause()}}
 const SC=[146.83,164.81,174.61,196,220,246.94,261.63,293.66,329.63,349.23,392,440];
-const MEL=[7,9,10,9,7,5,4,5,7,9,11,10,9,7,5,7,4,5,7,9,10,9,7,5,4,2,4,5,4,2,0,2];
 const nt=(f,t,d,ty,v)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v||.4,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(MB);o.start(t);o.stop(t+d+.05)};
 const drum=(t,k)=>{const g=AC.createGain();g.connect(MB);if(k){const o=AC.createOscillator();o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(40,t+.15);g.gain.setValueAtTime(.9,t);g.gain.exponentialRampToValueAtTime(.001,t+.2);o.connect(g);o.start(t);o.stop(t+.25)}else{const x=AC.createBufferSource();x.buffer=NZ;g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);x.connect(g);x.start(t)}};
 const TR={
-menu:(t,n)=>{for(let k=0;k<8;k++){nt(SC[MEL[(n*8+k)%32]],t+k*.33,.7,'triangle');if(k%4==0)nt(SC[n%4<2?0:4],t+k*.33,1.3,'sine')}return 2.64},
 combat:(t,n)=>{const B=[0,0,0,0,2,2,3,3,0,0,0,0,4,4,3,3],M=[7,-1,9,-1,11,9,-1,7,9,-1,7,-1,4,7,-1,2];
 for(let k=0;k<16;k++){const u=t+k*.2;if(k%4==0)drum(u,1);if(k%8==4)drum(u,0);if(k%2==0)nt(SC[B[k]]/2,u,.22,'sawtooth',.22);if(M[k]>=0)nt(SC[M[k]],u,.35,'square',.14)}return 3.2},
 win:t=>{[[523,0,.15],[523,.2,.15],[523,.4,.15],[659,.6,.3],[784,.9,.4],[1047,1.3,1.8]].forEach(a=>nt(a[0],t+a[1],a[2]+.2,'sawtooth',.25));[261.63,329.63,392].forEach(f=>nt(f,t+1.3,2,'triangle',.3));return 3.5},
 lose:t=>{[[440,0],[392,.8],[349.23,1.6],[293.66,2.4]].forEach(a=>nt(a[0],t+a[1],1.6,'triangle',.4));nt(110,t,4,'sine',.35);return 4.5}};
 function play(n){want=n;
-if(n=='menu'&&menuTrack&&!menuTrackFailed){
+if(n=='menu'){
 cur='menu';clearTimeout(TM);if(MB&&AC)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
 syncMenuTrack();return}
 syncMenuTrack();
-if(!AC||cur==n)return;cur=n;clearTimeout(TM);if(MB)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
+if(!AC||cur==n||!TR[n])return;cur=n;clearTimeout(TM);if(MB)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
 MB=AC.createGain();MB.connect(MG);const my=MB;let t=AC.currentTime+.15,k=0;
-const run=()=>{if(MB!==my)return;t+=TR[n](t,k++);if(n=='menu'||n=='combat')TM=setTimeout(run,Math.max(100,(t-AC.currentTime-1.5)*1000))};run()}
-function music(){if(AC){if(AC.state=='suspended')AC.resume();syncMenuTrack();return}
-try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){syncMenuTrack();return}
+const run=()=>{if(MB!==my)return;t+=TR[n](t,k++);if(n=='combat')TM=setTimeout(run,Math.max(100,(t-AC.currentTime-1.5)*1000))};run()}
+function music(){
+syncMenuTrack();
+if(AC){if(AC.state=='suspended')AC.resume();return}
+try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return}
 MG=AC.createGain();MG.gain.value=effVol()*.5;MG.connect(AC.destination);
 NZ=AC.createBuffer(1,AC.sampleRate*.2,AC.sampleRate);const D=NZ.getChannelData(0);for(let i=0;i<D.length;i++)D[i]=Math.random()*2-1;
 cur='';play(want||'menu')}
