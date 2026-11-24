@@ -131,23 +131,24 @@ combat:(t,n)=>{const B=[0,0,0,0,2,2,3,3,0,0,0,0,4,4,3,3],M=[7,-1,9,-1,11,9,-1,7,
 for(let k=0;k<16;k++){const u=t+k*.2;if(k%4==0)drum(u,1);if(k%8==4)drum(u,0);if(k%2==0)nt(SC[B[k]]/2,u,.22,'sawtooth',.22);if(M[k]>=0)nt(SC[M[k]],u,.35,'square',.14)}return 3.2},
 win:t=>{[[523,0,.15],[523,.2,.15],[523,.4,.15],[659,.6,.3],[784,.9,.4],[1047,1.3,1.8]].forEach(a=>nt(a[0],t+a[1],a[2]+.2,'sawtooth',.25));[261.63,329.63,392].forEach(f=>nt(f,t+1.3,2,'triangle',.3));return 3.5},
 lose:t=>{[[440,0],[392,.8],[349.23,1.6],[293.66,2.4]].forEach(a=>nt(a[0],t+a[1],1.6,'triangle',.4));nt(110,t,4,'sine',.35);return 4.5}};
+function startSynth(n){
+if(!AC||!TR[n])return;
+clearTimeout(TM);
+if(MB)try{MB.gain.setTargetAtTime(0,AC.currentTime,.1)}catch(e){}
+MB=AC.createGain();MB.connect(MG);const my=MB;let t=AC.currentTime+.08,k=0;
+const run=()=>{if(MB!==my||!AC)return;t+=TR[n](t,k++);if(n=='combat'||n=='menu')TM=setTimeout(run,Math.max(120,(t-AC.currentTime-1.2)*1000))};
+run()}
+TR.menu=t=>{[[293.66,0,.6],[329.63,.6,.6],[349.23,1.2,.6],[329.63,1.8,.6]].forEach(a=>nt(a[0],t+a[1],a[2],'triangle',.22));return 2.4};
 function play(n){want=n;
-if(n=='menu'){
-cur='menu';clearTimeout(TM);if(MB&&AC)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
-syncDefeatTrack();syncVictoryTrack();syncCombatTrack();syncMenuTrack();return}
-if(n=='combat'&&combatTrack&&!combatTrackFailed){
-cur='combat';clearTimeout(TM);if(MB&&AC)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
-syncMenuTrack();syncDefeatTrack();syncVictoryTrack();syncCombatTrack();return}
-if(n=='lose'&&defeatTrack&&!defeatTrackFailed){
-cur='lose';clearTimeout(TM);if(MB&&AC)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
-syncMenuTrack();syncVictoryTrack();syncCombatTrack();syncDefeatTrack();return}
-if(n=='win'&&victoryTrack&&!victoryTrackFailed){
-cur='win';clearTimeout(TM);if(MB&&AC)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
-syncMenuTrack();syncDefeatTrack();syncCombatTrack();syncVictoryTrack();return}
 syncMenuTrack();syncDefeatTrack();syncVictoryTrack();syncCombatTrack();
-if(!AC||cur==n||!TR[n])return;cur=n;clearTimeout(TM);if(MB)MB.gain.setTargetAtTime(0,AC.currentTime,.2);
-MB=AC.createGain();MB.connect(MG);const my=MB;let t=AC.currentTime+.15,k=0;
-const run=()=>{if(MB!==my)return;t+=TR[n](t,k++);if(n=='combat')TM=setTimeout(run,Math.max(100,(t-AC.currentTime-1.5)*1000))};run()}
+const el=n=='menu'?menuTrack:n=='combat'?combatTrack:n=='lose'?defeatTrack:n=='win'?victoryTrack:null;
+const canUseMp3=el&&!el.error&&!(n=='combat'&&combatTrackFailed)&&!(n=='lose'&&defeatTrackFailed)&&!(n=='win'&&victoryTrackFailed);
+if(canUseMp3){
+cur=n;clearTimeout(TM);if(MB&&AC)MB.gain.setTargetAtTime(0,AC.currentTime,.15);
+if(!el.muted&&el.paused){el.play().catch(()=>{if(AC)startSynth(n)})}
+return}
+if(!AC)return;
+cur=n;startSynth(n)}
 function music(){
 syncMenuTrack();syncDefeatTrack();syncVictoryTrack();syncCombatTrack();
 if(AC){if(AC.state=='suspended')AC.resume();return}
