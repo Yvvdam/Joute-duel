@@ -155,7 +155,8 @@ try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return}
 MG=AC.createGain();MG.gain.value=effVol()*.5;MG.connect(AC.destination);
 NZ=AC.createBuffer(1,AC.sampleRate*.2,AC.sampleRate);const D=NZ.getChannelData(0);for(let i=0;i<D.length;i++)D[i]=Math.random()*2-1;
 cur='';play(want||'menu')}
-addEventListener('pointerdown',music,{once:true});addEventListener('keydown',music,{once:true});
+const unlockAudio=()=>{music();syncMenuTrack();syncDefeatTrack();syncVictoryTrack();syncCombatTrack()};
+addEventListener('pointerdown',unlockAudio);addEventListener('keydown',unlockAudio);
 const vMute=$('vol-mute'),vDown=$('vol-down'),vUp=$('vol-up'),vSld=$('vol-slider'),vPct=$('vol-pct');
 function setV(v,keepMute){
 vol=Math.max(0,Math.min(1,Math.round(v*100)/100));
