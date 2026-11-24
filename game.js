@@ -139,12 +139,15 @@ MB=AC.createGain();MB.connect(MG);const my=MB;let t=AC.currentTime+.08,k=0;
 const run=()=>{if(MB!==my||!AC)return;t+=TR[n](t,k++);if(n=='combat'||n=='menu')TM=setTimeout(run,Math.max(120,(t-AC.currentTime-1.2)*1000))};
 run()}
 TR.menu=t=>{[[293.66,0,.6],[329.63,.6,.6],[349.23,1.2,.6],[329.63,1.8,.6]].forEach(a=>nt(a[0],t+a[1],a[2],'triangle',.22));return 2.4};
-function play(n){want=n;
-syncMenuTrack();syncDefeatTrack();syncVictoryTrack();syncCombatTrack();
+function play(n){
+const prevWant=want;
+want=n;
 const el=n=='menu'?menuTrack:n=='combat'?combatTrack:n=='lose'?defeatTrack:n=='win'?victoryTrack:null;
+if(el&&prevWant!==n&&(n=='combat'||n=='win'||n=='lose')){try{el.currentTime=0}catch(e){}}
+syncMenuTrack();syncDefeatTrack();syncVictoryTrack();syncCombatTrack();
 const canUseMp3=el&&!el.error&&!(n=='combat'&&combatTrackFailed)&&!(n=='lose'&&defeatTrackFailed)&&!(n=='win'&&victoryTrackFailed);
 if(canUseMp3){
-cur=n;clearTimeout(TM);if(MB&&AC)MB.gain.setTargetAtTime(0,AC.currentTime,.15);
+cur=n;clearTimeout(TM);if(MB&&AC)try{MB.gain.setTargetAtTime(0,AC.currentTime,.15)}catch(e){}
 if(!el.muted&&el.paused){el.play().catch(()=>{if(AC)startSynth(n)})}
 return}
 if(!AC)return;
