@@ -14,7 +14,11 @@ const H=[
 {r:'Barde',e:'🎻',c:'#b0507a',sp:11,a:['Note aiguë',13],u:['Ballade héroïque',36],b:['Hymne de vie','heal'],d:['Chanson apaisante','absorb']}];
 const BD={atk:'+40 % de dégâts sur 2 attaques',crit:'la prochaine attaque est critique',heal:'soigne 22 PV'};
 const DD={block:'réduit les dégâts de 60 %',dodge:'1 chance sur 2 d’esquiver',reflect:'réduit de 45 % et renvoie 25 %',absorb:'réduit de 50 % et soigne un peu'};
-const AR=[{n:'Champ de tournoi',s:['#7fb6e8','#e9e2b8'],g:'#5d8a3a'},{n:'Forêt sombre',s:['#1e3a2a','#4a6b3d'],g:'#2f4a28'},{n:'Cour du château',s:['#8c9bb0','#cdd3da'],g:'#8a8a8a'},{n:'Pont de pierre',s:['#e08a5a','#ffd8a0'],g:'#6b5a4a'},{n:'Ruines antiques',s:['#3b2a52','#b0728a'],g:'#7a6a58'}];
+const AR=[
+{n:'La Fosse des Forgerons',id:'forge'},
+{n:'Le Cloître des Reliques Brisées',id:'cloitre'},
+{n:'La Lice des Brumes d’Orage',id:'lice'}
+];
 const PO=[[9.75,3.25],[7.67,2.17],[10.5,4.5],[8,2],[11,5],[7,1.5]];/* positions en heures de cadran */
 const clk=h=>{const t=h/12*2*Math.PI;return[50+36*Math.sin(t),52-26*Math.cos(t)]};
 const ITM=['🎖️','👑','⚜️'];
@@ -72,7 +76,7 @@ addEventListener('keydown',e=>{if(e.key=='Escape')closeMod()});
 let F;
 const mk=i=>({i,hp:100,ult:3,ab:0,cr:0,g:0});
 const S=s=>s?F.B:F.A;
-function fight(pi){const n=SV.n||0,ar=AR[Math.floor(n/3)%5];begin(pi,R(0,9),ar,PO[n%6],`Arène : ${ar.n} · Combat n°${n+1}`,0)}
+function fight(pi){const n=SV.n||0,ar=AR[Math.floor(n/3)%3];begin(pi,R(0,9),ar,PO[n%6],`Arène : ${ar.n} · Combat n°${n+1}`,0)}
 function begin(pi,e,ar,po,hdr,on){
 F={pi,ar,P:[clk(po[0]),clk(po[1])],A:mk(pi),B:mk(e),busy:0,over:0,on};
 const st=SV.streak||0,im=Math.min(3,Math.floor(st/10)),au=SV.aura||st>=40;
@@ -81,9 +85,15 @@ const av=(s,x)=>{const X=S(s),d=H[X.i],fl=F.P[s][0]>F.P[1-s][0];
 return `<div class="av ${fl?'f':''} ${s==0&&au?'aura':''}" id="v${s}" style="left:${F.P[s][0]}%;top:${F.P[s][1]}%">${s==0&&im?`<div class="itm">${ITM.slice(0,im).join('')}</div>`:''}<div class="in">${art(d)}</div></div>`};
 app.innerHTML=`<small>${hdr}${st?' · Série '+st:''}</small>
 <div class="hud">${[0,1].map(s=>`<div><b>${H[S(s).i].r}</b> <small>${H[S(s).i].nom||''}</small><div class="hb"><i id="h${s}"></i></div></div>`).join('')}</div>
-<div class="arena" id="ar" style="background:linear-gradient(${ar.s[0]},${ar.s[1]} 45%,${ar.g} 45%)"><div class="floor"></div>${av(0)}${av(1)}</div>
+<div class="arena" id="ar"><canvas class="arena-canvas" id="arena-canvas" aria-hidden="true"></canvas><div class="arena-postfx" id="arena-postfx"></div><div class="floor"></div>${av(0)}${av(1)}</div>
 <div id="tm"><i></i></div><div id="log"></div><div id="act" class="grid"></div>`;
-sv();play('combat');say('Le duel commence !');if(!on)turn()}
+sv();
+if(window.jouteArena)window.jouteArena.destroy();
+window.jouteArena=new RealisticMedievalArenas($('arena-canvas'),$('arena-postfx'));
+window.jouteArena.showGroundAnchors=false;
+window.jouteArena.setArena(ar.id);
+window.jouteArena.start();
+play('combat');say('Le duel commence !');if(!on)turn()}
 const say=t=>{const l=$('log');if(l)l.innerHTML=t+'<br>'+l.innerHTML.split('<br>').slice(0,3).join('<br>')};
 const hud=()=>[0,1].forEach(s=>{const h=$('h'+s);if(h)h.style.width=S(s).hp+'%'});
 function turn(){
@@ -145,7 +155,7 @@ $('nx').onclick=()=>F.on?online(F.pi):fight(F.pi);$('mn').onclick=menu}
 const SBURL='https://bmwqyymidcnqpiwqvfex.supabase.co',SBKEY='sb_publishable_N4h4L5krFIcGYKoHyptvAA_xrFny1ut';
 let SB=null,ME=null,OM=null,poll=null,chn=null;
 const sbc=()=>{if(!SB&&window.supabase)SB=window.supabase.createClient(SBURL,SBKEY);return SB};
-function leave(){clearInterval(poll);if(chn&&SB)SB.removeChannel(chn);chn=null;OM=null;if(F)clearInterval(F.iv)}
+function leave(){if(window.jouteArena){window.jouteArena.destroy();window.jouteArena=null}clearInterval(poll);if(chn&&SB)SB.removeChannel(chn);chn=null;OM=null;if(F)clearInterval(F.iv)}
 function waitScr(t){app.innerHTML=`<h1 style="font-size:1.8rem;margin-top:44px">En ligne</h1><div class="det" id="ol">${t}</div><button id="bk">Annuler</button>`;$('bk').onclick=menu}
 const btns=()=>{const d=H[F.A.i];return [['a',d.a[0],'Attaque, '+d.a[1]+' dégâts'],['u',d.u[0],'Ultime, '+d.u[1]+' dégâts (reste '+F.A.ult+')'],['b',d.b[0],BD[d.b[1]]],['d',d.d[0],DD[d.d[1]]]].map(m=>`<button data-m="${m[0]}" ${m[0]=='u'&&!F.A.ult?'disabled':''}><b>${m[1]}</b><br><small>${m[2]}</small></button>`).join('')};
 async function online(ci){
@@ -167,7 +177,7 @@ async function apply(r){
 if(r.status=='waiting'||!OM)return;
 const me=r.p1==ME?1:2,op=3-me;OM.dl=new Date(r.deadline).getTime();
 if(!F||!F.on||F.mid!=r.id){
-const h=[...r.id].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7)>>>0,ar=AR[h%5];
+const h=[...r.id].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7)>>>0,ar=AR[h%3];
 begin(r['c'+me],r['c'+op],ar,PO[(h>>3)%6],`Arène : ${ar.n} · En ligne`,1);F.mid=r.id;OM.turn=r.turn;syncF(r,me);hud();
 if(r.status=='done'){OM.done=1;return finish()}return onlineTurn()}
 if(OM.done)return;

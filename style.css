@@ -64,3 +64,16 @@ small{color:#a38b63}.mode small{color:#5a3b1b}
 .dead.f .in{transform:scaleX(-1) rotate(80deg) translateY(20px)}
 .spk{position:absolute;animation:sk 1.4s infinite;z-index:6}
 @keyframes sk{from{opacity:1;transform:translateY(0) scale(.6)}to{opacity:0;transform:translateY(-50px) scale(1.2)}}
+
+
+/* Arènes Canvas dark fantasy : le décor reste derrière les combattants et les effets. */
+.arena{isolation:isolate;background:#100d0b}
+.arena-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0}
+.arena-postfx{position:absolute;inset:0;z-index:1;pointer-events:none;box-shadow:inset 0 0 75px rgba(0,0,0,.72);transition:background .5s ease}
+.arena-postfx.fx-forge{background:radial-gradient(circle at 52% 66%,rgba(234,88,12,.14),rgba(124,45,18,.05) 45%,rgba(0,0,0,.35))}
+.arena-postfx.fx-cloitre{background:radial-gradient(circle at 48% 22%,rgba(186,230,253,.10),rgba(30,41,59,.06) 50%,rgba(2,6,23,.42))}
+.arena-postfx.fx-lice{background:radial-gradient(circle at 50% 30%,rgba(148,163,184,.07),rgba(15,23,42,.18) 55%,rgba(0,0,0,.48))}
+.arena-postfx.fx-lice.flash-active{animation:realisticLightningFlash .34s cubic-bezier(.16,1,.3,1)}
+@keyframes realisticLightningFlash{0%{background-color:rgba(226,232,240,.38)}35%{background-color:rgba(148,163,184,.12)}55%{background-color:rgba(226,232,240,.3)}100%{background-color:transparent}}
+.arena .floor{z-index:2;pointer-events:none}
+.arena .av{z-index:3}
