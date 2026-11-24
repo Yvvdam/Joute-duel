@@ -3,9 +3,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Joute Duel</title>
 <link rel="stylesheet" href="style.css"></head><body>
-<div id="knob" role="slider" tabindex="0" aria-label="Volume de la musique" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40"><i></i></div>
+<div id="audio-ctrl" role="group" aria-label="Contrôle de la musique">
+  <button type="button" id="vol-mute" title="Couper / Activer le son" aria-label="Couper le son">🔊</button>
+  <button type="button" id="vol-down" title="Baisser le volume" aria-label="Baisser le volume">−</button>
+  <input type="range" id="vol-slider" min="0" max="100" value="40" aria-label="Volume de la musique">
+  <button type="button" id="vol-up" title="Monter le volume" aria-label="Monter le volume">+</button>
+  <span id="vol-pct" aria-hidden="true">40%</span>
+</div>
 <div id="app"></div>
-<script src="supabase.js"></script>
+<script src="vendor/supabase.js"></script>
 <script src="arena-engine.js"></script>
 <script src="game.js"></script>
 </body></html>
